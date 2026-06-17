@@ -1,0 +1,326 @@
+1.	En mysql_principal ejecutar la consulta SHOW MASTER STATUS;
+6.	En mysql_secundario ejecutar la siguiente consulta con los datos obtenidos de mysql_principal: 
+CHANGE REPLICATION SOURCE TO
+SOURCE_HOST='mysql_master',
+SOURCE_USER='root',
+SOURCE_PASSWORD='root',
+SOURCE_LOG_FILE='mysql-bin.00000X',
+SOURCE_LOG_POS=XXX;
+7.	Luego en mysql_secundario ejecutar las consultas: START REPLICA, SHOW REPLICA STATUS cada una por separado.
+STOP REPLICA
+
+Nginx soporta varios métodos de balanceo. En tu caso, solo debes cambiar la sección `upstream`.
+
+---
+
+# 1. Round Robin (por defecto)
+
+Es el que ya tienes. Reparte las peticiones una por una.
+
+```nginx
+events {}
+
+http {
+
+    upstream servidores {
+
+        server formulario:8100;
+        server formulario2:8100;
+
+    }
+
+    server {
+
+        listen 80;
+
+        location / {
+
+            proxy_pass http://servidores;
+
+        }
+
+    }
+
+}
+```
+
+Ejemplo:
+
+```text
+Petición 1 -> formulario
+Petición 2 -> formulario2
+Petición 3 -> formulario
+Petición 4 -> formulario2
+```
+
+---
+
+# 2. Weight (pesos)
+
+Sirve cuando un servidor tiene más recursos.
+
+```nginx
+events {}
+
+http {
+
+    upstream servidores {
+
+        server formulario:8100 weight=3;
+        server formulario2:8100 weight=1;
+
+    }
+
+    server {
+
+        listen 80;
+
+        location / {
+
+            proxy_pass http://servidores;
+
+        }
+
+    }
+
+}
+```
+
+Ejemplo:
+
+```text
+Petición 1 -> formulario
+Petición 2 -> formulario
+Petición 3 -> formulario
+Petición 4 -> formulario2
+```
+
+El primer servidor recibe más carga.
+
+---
+
+# 3. Least Connections
+
+Envía la petición al servidor con menos conexiones activas.
+
+```nginx
+events {}
+
+http {
+
+    upstream servidores {
+
+        least_conn;
+
+        server formulario:8100;
+        server formulario2:8100;
+
+    }
+
+    server {
+
+        listen 80;
+
+        location / {
+
+            proxy_pass http://servidores;
+
+        }
+
+    }
+
+}
+```
+
+Ejemplo:
+
+```text
+Servidor 1 = 8 conexiones
+Servidor 2 = 2 conexiones
+
+Nueva petición -> Servidor 2
+```
+
+Muy usado cuando las peticiones duran mucho tiempo.
+
+---
+
+# 4. IP Hash
+
+Un mismo cliente siempre va al mismo servidor.
+
+```nginx
+events {}
+
+http {
+
+    upstream servidores {
+
+        ip_hash;
+
+        server formulario:8100;
+        server formulario2:8100;
+
+    }
+
+    server {
+
+        listen 80;
+
+        location / {
+
+            proxy_pass http://servidores;
+
+        }
+
+    }
+
+}
+```
+
+Ejemplo:
+
+```text
+Usuario A -> formulario
+Usuario A -> formulario
+Usuario A -> formulario
+
+Usuario B -> formulario2
+Usuario B -> formulario2
+```
+
+Útil para sesiones.
+
+---
+
+# 5. Hash por parámetro
+
+Permite decidir el servidor según un valor.
+
+```nginx
+events {}
+
+http {
+
+    upstream servidores {
+
+        hash $request_uri;
+
+        server formulario:8100;
+        server formulario2:8100;
+
+    }
+
+    server {
+
+        listen 80;
+
+        location / {
+
+            proxy_pass http://servidores;
+
+        }
+
+    }
+
+}
+```
+
+Ejemplo:
+
+```text
+/peliculas -> formulario
+/clientes -> formulario2
+```
+
+---
+
+# 6. Servidor de respaldo (Backup)
+
+Si el principal falla.
+
+```nginx
+events {}
+
+http {
+
+    upstream servidores {
+
+        server formulario:8100;
+        server formulario2:8100 backup;
+
+    }
+
+    server {
+
+        listen 80;
+
+        location / {
+
+            proxy_pass http://servidores;
+
+        }
+
+    }
+
+}
+```
+
+Ejemplo:
+
+```text
+formulario activo
+↓
+todo el tráfico va allí
+
+si cae
+↓
+formulario2 recibe todo
+```
+
+---
+
+# Para una práctica de Replicación + Balanceo
+
+Los profesores suelen pedir demostrar:
+
+### Round Robin
+
+```nginx
+upstream servidores {
+    server formulario:8100;
+    server formulario2:8100;
+}
+```
+
+### Weight
+
+```nginx
+upstream servidores {
+    server formulario:8100 weight=2;
+    server formulario2:8100 weight=3;
+}
+```
+
+### Least Connections
+
+```nginx
+upstream servidores {
+    least_conn;
+    server formulario:8100;
+    server formulario2:8100;
+}
+```
+
+### IP Hash
+
+```nginx
+upstream servidores {
+    ip_hash;
+    server formulario:8100;
+    server formulario2:8100;
+}
+```
+
+Son los cuatro algoritmos que normalmente se muestran en una exposición o informe de balanceo de carga con Nginx.
+
