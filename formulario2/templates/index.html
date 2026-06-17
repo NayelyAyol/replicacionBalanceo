@@ -1,0 +1,188 @@
+<!-- Indica que es un documento HTML -->
+<!DOCTYPE html>
+
+
+<html>
+
+
+<head>
+
+<!-- Título de la página -->
+<title>
+Sistema de Películas2
+</title>
+
+
+</head>
+
+
+
+<body>
+
+
+<!-- Título principal -->
+<h1>
+Gestión de Películas2
+</h1>
+
+
+
+
+
+<!-- Formulario para crear películas -->
+<h2>
+Crear película
+</h2>
+
+
+<form action="/agregar" method="POST">
+
+
+<!-- Campo nombre -->
+<input 
+name="nombre"
+placeholder="Nombre">
+
+
+<!-- Campo género -->
+<input 
+name="genero"
+placeholder="Genero">
+
+
+<!-- Envía información al servidor -->
+<button>
+Guardar
+</button>
+
+
+</form>
+
+
+
+
+
+
+<h2>
+Buscar película
+</h2>
+
+
+
+<!-- Formulario de búsqueda -->
+<form action="/buscar">
+
+
+<!-- Envía ID como parámetro -->
+<input
+name="id"
+placeholder="ID">
+
+
+<button>
+Buscar
+</button>
+
+
+</form>
+
+
+
+
+
+
+
+<h2>
+Películas registradas
+</h2>
+
+
+<ul>
+
+
+<!-- Recorre las películas enviadas por Flask -->
+
+{% for pelicula in peliculas %}
+
+
+
+<li>
+
+
+<!-- Muestra información -->
+ID:
+{{pelicula.id}}
+
+
+-
+
+{{pelicula.nombre}}
+
+
+-
+
+{{pelicula.genero}}
+
+
+
+<!-- Botón eliminar -->
+<a href="/eliminar?id={{pelicula.id}}">
+Eliminar
+</a>
+
+
+
+</li>
+
+
+
+{% endfor %}
+
+
+</ul>
+
+
+
+
+
+
+
+
+<h2>
+Actualizar película
+</h2>
+
+
+
+<form action="/actualizar" method="POST">
+
+
+<input 
+name="id"
+placeholder="ID">
+
+
+<input
+name="nombre"
+placeholder="Nuevo nombre">
+
+
+
+<input
+name="genero"
+placeholder="Nuevo genero">
+
+
+<button>
+Actualizar
+</button>
+
+
+</form>
+
+
+
+</body>
+
+
+</html>

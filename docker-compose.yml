@@ -1,0 +1,67 @@
+version: '3'
+
+services:
+  mysql_principal:
+    container_name: MaestroP2
+    image: mysql:8.0
+    ports:
+      - 7500:3306
+    #la base de datos principal tiene el id1 (siempre 1), luego la base de datos, luego el nombre el archivo y finalmente el nombre de la bd a replicar 
+    command: --server-id=1 --log-bin=mysql-bin --binlog-do-db=replica
+    environment:
+      MYSQL_ROOT_PASSWORD : root
+      MYSQL_DATABASE : replica
+    volumes:
+    #primer nombre es un nombre cualquiera
+      - master_datos:/var/lib/mysql
+
+  mysql_secundario:
+    container_name: EsclavoP2
+    image: mysql:8.0
+    ports:
+      - 7501:3306
+    command: --server-id=2 --log-bin=mysql-bin --binlog-do-db=replica
+    environment:
+      MYSQL_ROOT_PASSWORD : root
+      MYSQL_DATABASE : replica
+    volumes:
+      - slave_datos:/var/lib/mysql 
+
+  phpmyadmin:
+    container_name: phpmyadminP2
+    image: phpmyadmin:latest
+    ports:
+      - 7502:80
+    #Para saber a cual se conecta
+    environment:
+      PMA_HOSTS : "mysql_principal, mysql_secundario"
+      PMA_ARBITRARY: 1
+      
+  formulario:
+    build:
+      context: ./formulario
+      dockerfile: Dockerfile
+    container_name: ServidorWebP11
+    ports:
+      - 8015:8100
+
+  formulario2:
+    build: 
+      context: ./formulario2
+      dockerfile: Dockerfile
+    container_name: ServidorWeb3
+    ports:
+      - 8016:8100
+
+  nginx:
+    build: 
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginxpelis2
+    ports:
+      - 8080:80
+  
+
+volumes:
+  master_datos:
+  slave_datos:
